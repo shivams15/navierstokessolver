@@ -11,11 +11,12 @@
 #define GHOST_RIGHT 6
 #define GHOST_BOTTOM 7
 #define GHOST_TOP 8
+#define GHOST_CORNER 9
 
 struct Point{
 	int id = -1;
-	int x;
-	int y;
+	double x;
+	double y;
 	int type = INTERNAL;
 };
 
@@ -24,6 +25,7 @@ private:
 	double xrange[2];
 	double yrange[2];
 	void SetupGrid();
+	int ParseDataFile(FILE *f1);
 public:
 	int nx, ny;
 	double hx, hy;
@@ -31,6 +33,7 @@ public:
 	Point **pgrid;
 	Point **ugrid;
 	Point **vgrid;
+	int nPoints[3];
 	Grid(char* fname);
 };
 
