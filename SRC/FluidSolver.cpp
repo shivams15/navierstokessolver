@@ -35,6 +35,7 @@ void FluidSolver::SolverSetup(){
 	ConfigureKSPSolver(&uSolver, &LHS_u);
 	ConfigureKSPSolver(&vSolver, &LHS_v);
 	ConfigureKSPSolver(&phiSolver, &LHS_phi);
+	KSPSetInitialGuessNonzero(phiSolver, PETSC_TRUE);
 
 	setup =true;
 }
