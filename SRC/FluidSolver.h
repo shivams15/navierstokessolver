@@ -7,7 +7,7 @@ struct FluidField{
 	Vec u;
 	Vec v;
 	Vec phi;
-	Vec p;
+	// Vec p;
 };
 
 class FluidSolver{
@@ -32,10 +32,20 @@ private:
 	int ParseDataFile(FILE *f1);
 	int SolverInitialize();
 	void SolverSetup();
-	void CreateFluidField(FluidField *fField);
+	void CreateFluidField(FluidField **fField);
 	void CreateMatrix(Mat *A, int m, int n);
 	int* StencilLaplacian(int i, int j, char *var);
 	bool ApplyGoverningEquation(int i, int j, char *var);
+	void ConfigureKSPSolver(KSP *solver, Mat *A);
+	void ConstructRHS_u();
+	void ConstructRHS_v();
+	void ConstructRHS_phi(Vec *u_star, Vec *v_star);
+	void ExportData(int iter, FluidField *field);
+	double SlopeLimiter(int i, int j, Point **pts, PetscScalar *var, char *dir);
+	double minmode(double a, double b);
+	int bcType[4] = {-1, -1, -1, -1};
+	int saveIter = 50;
+	MatNullSpace NSP;
 	// void ConstructRHS();
 	// void ConstructRHS_u();
 	// void ConstructRHS_v();
@@ -45,7 +55,6 @@ public:
 	FluidField *nextField;
 	FluidSolver(char *fname, Grid *grid);
 	void Solve();
-	int bcType[4] = {-1, -1, -1, -1};
 	bool setup = false;
 };
 

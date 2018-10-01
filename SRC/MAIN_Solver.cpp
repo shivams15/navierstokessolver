@@ -16,7 +16,10 @@ int main(int argc, char *argv[])
 	else{
 		Grid *grid = new Grid(argv[1]);
 		if(!grid->setup) cout << "Grid setup failed!\n";
-		else FluidSolver *fsolver = new FluidSolver(argv[2], grid);
+		else{
+			FluidSolver *fSolver = new FluidSolver(argv[2], grid);
+			if(fSolver->setup) fSolver->Solve();
+		}
 	}
 
 	return 0;
