@@ -29,7 +29,7 @@
  	}
  	vgrid[ny+2] = new Point[nx+2];
 
- 	for(int i = 0; i < ny + 2; i++)
+ 	for(int i = 0; i < ny + 2; i++){
  		for(int j = 0; j < nx + 2; j++){
  			pgrid[i][j].x = xrange[0] -hx/2 + j*hx;
  			pgrid[i][j].y = yrange[0] - hy/2 + i*hy;
@@ -40,8 +40,9 @@
  			else if(j == nx+1) pgrid[i][j].type = GHOST_RIGHT;
  			if (i%(ny+1) + j%(nx+1) == 0) pgrid[i][j].type = GHOST_CORNER;
  		}
+ 	}
 
- 	for(int i = 0; i < ny + 2; i++)
+ 	for(int i = 0; i < ny + 2; i++){
  		for(int j = 0; j < nx + 3; j++){
  			ugrid[i][j].x = xrange[0] + (j-1)*hx;
  			ugrid[i][j].y = yrange[0] - hy/2 + i*hy;
@@ -54,8 +55,9 @@
  			else if(j == nx+1) ugrid[i][j].type = BOUNDARY_RIGHT;
  			if (i%(ny+1) + j%(nx+2) == 0) ugrid[i][j].type = GHOST_CORNER;
  		}
+ 	}
 
- 	for(int i = 0; i < ny + 3; i++)
+ 	for(int i = 0; i < ny + 3; i++){
  		for(int j = 0; j < nx + 2; j++){
  			vgrid[i][j].x = xrange[0] -hx/2 + j*hx;
  			vgrid[i][j].y = yrange[0] + (i-1)*hy;
@@ -68,6 +70,7 @@
  			else if(i == ny+1) vgrid[i][j].type = BOUNDARY_TOP;
  			if (i%(ny+2) + j%(nx+1) == 0) vgrid[i][j].type = GHOST_CORNER;
  		}
+ 	}
 
     nPoints[0] = (nx + 3)*(ny + 2);
  	nPoints[1] = (ny + 3)*(nx + 2);

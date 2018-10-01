@@ -40,16 +40,17 @@ private:
 	void ConstructRHS_u();
 	void ConstructRHS_v();
 	void ConstructRHS_phi(Vec *u_star, Vec *v_star);
+	void ConstructLHS_u();
+	void ConstructLHS_v();
+	void ConstructLHS_phi();
+	double ConvectiveDerivative_u(int i, int j, PetscScalar *u, PetscScalar *v, Point **pts);
+	double ConvectiveDerivative_v(int i, int j, PetscScalar *u, PetscScalar *v, Point **pts);
 	void ExportData(int iter, FluidField *field);
 	double SlopeLimiter(int i, int j, Point **pts, PetscScalar *var, char *dir);
 	double minmode(double a, double b);
 	int bcType[4] = {-1, -1, -1, -1};
 	int saveIter = 50;
 	MatNullSpace NSP;
-	// void ConstructRHS();
-	// void ConstructRHS_u();
-	// void ConstructRHS_v();
-	// void ConstructRHS_phi();
 public:
 	FluidField *prevField;
 	FluidField *nextField;
