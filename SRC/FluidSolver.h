@@ -7,7 +7,7 @@ struct FluidField{
 	Vec u;
 	Vec v;
 	Vec phi;
-	// Vec p;
+	Vec p;
 };
 
 class FluidSolver{

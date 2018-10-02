@@ -22,9 +22,11 @@ void FluidSolver::CreateFluidField(FluidField **fField){
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[0], &((*fField)->u));
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[1], &((*fField)->v));
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &(*fField)->phi);
+	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &(*fField)->p);
 	VecSet((*fField)->u,0.0);
 	VecSet((*fField)->v,0.0);
 	VecSet((*fField)->phi,0.0);
+	VecSet((*fField)->p,0.0);
 }
 
 void FluidSolver::SolverSetup(){	
@@ -638,7 +640,7 @@ int FluidSolver::SolverInitialize(){
 void FluidSolver::Solve(){
 	int iter = 1;
 	PetscReal umax, vmax, divmax;
-	Vec u_star, v_star, dphidx, dphidy, dUdX, dVdY, div;
+	Vec u_star, v_star, dphidx, dphidy, dUdX, dVdY, div, lapPhi;
 
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[0], &u_star);
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[1], &v_star);
@@ -647,6 +649,7 @@ void FluidSolver::Solve(){
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &dUdX);
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &dVdY);
 	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &div);
+	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &lapPhi);
 
 	do{
 		ConstructRHS_u();
@@ -661,12 +664,15 @@ void FluidSolver::Solve(){
 
 		MatMult(dpdx, nextField->phi, dphidx);
 		MatMult(dpdy, nextField->phi, dphidy);
+		MatMult(lap_phi, nextField->phi, lapPhi);
 
 		VecAXPY(u_star, -dt, dphidx);
 		VecAXPY(v_star, -dt, dphidy);
 
 		VecCopy(u_star, nextField->u);
 		VecCopy(v_star, nextField->v);
+		VecCopy(nextField->phi, nextField->p);
+		VecAXPY(nextField->p, -dt/(2*re), lapPhi);
 
 		MatMult(dudx, nextField->u, dUdX);
 		MatMult(dvdy, nextField->v, dVdY);
@@ -697,17 +703,22 @@ void FluidSolver::Solve(){
 	VecDestroy(&dUdX);
 	VecDestroy(&dVdY);
 	VecDestroy(&div);
+	VecDestroy(&lapPhi);
 }
 
 void FluidSolver::ExportData(int iter, FluidField *field){
 	PetscScalar *u = new PetscScalar[grid->nPoints[0]];
 	PetscScalar *v = new PetscScalar[grid->nPoints[1]];
+	PetscScalar *p = new PetscScalar[grid->nPoints[2]];
 	VecGetArray(field->u, &u);
 	VecGetArray(field->v, &v);
+	VecGetArray(field->p, &p);
 	char f1[255];
 	char f2[255];
+	char f3[255];
 	sprintf(f1, "u_%d.txt", iter);
 	sprintf(f2, "v_%d.txt", iter);
+	sprintf(f3, "p_%d.txt", iter);
 	FILE *f = fopen(f1, "w");
 	Point **pts = grid->ugrid;
 
@@ -734,6 +745,17 @@ void FluidSolver::ExportData(int iter, FluidField *field){
 				fprintf(f, "%lf %lf %lf\n", 0.5*(pts[i][j].x + pts[i][j+1].x), 0.5*(pts[i][j].y + pts[i][j+1].y), 0.5*(v[pts[i][j].id] + v[pts[i][j+1].id]));
 			else if(pts[i][j].type == GHOST_RIGHT)
 				fprintf(f, "%lf %lf %lf\n", 0.5*(pts[i][j].x + pts[i][j-1].x), 0.5*(pts[i][j].y + pts[i][j-1].y), 0.5*(v[pts[i][j].id] + v[pts[i][j-1].id]));
+		}
+	}
+	fclose(f);
+
+	f = fopen(f3, "w");
+	pts = grid->pgrid;
+
+	for(int i = 0; i < grid->ny+2; i++){
+		for(int j = 0; j < grid->nx+2; j++){
+			if(pts[i][j].type == INTERNAL)
+				fprintf(f, "%lf %lf %lf\n", pts[i][j].x, pts[i][j].y, p[pts[i][j].id]);
 		}
 	}
 	fclose(f);
