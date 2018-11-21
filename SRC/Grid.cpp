@@ -33,12 +33,14 @@
  		for(int j = 0; j < nx + 2; j++){
  			pgrid[i][j].x = xrange[0] -hx/2 + j*hx;
  			pgrid[i][j].y = yrange[0] - hy/2 + i*hy;
- 			pgrid[i][j].id = j + i*(nx+2);
- 			if(i == 0) pgrid[i][j].type = GHOST_BOTTOM;
- 			else if(i == ny+1) pgrid[i][j].type = GHOST_TOP;
- 			else if(j == 0) pgrid[i][j].type = GHOST_LEFT;
- 			else if(j == nx+1) pgrid[i][j].type = GHOST_RIGHT;
- 			if (i%(ny+1) + j%(nx+1) == 0) pgrid[i][j].type = GHOST_CORNER;
+ 			if (i%(ny+1) + j%(nx+1) == 0) 
+ 				pgrid[i][j].type = GHOST_CORNER;
+ 			else{
+ 				if(i == 0) pgrid[i][j].type = GHOST_BOTTOM;
+ 				else if(i == ny+1) pgrid[i][j].type = GHOST_TOP;
+ 				else if(j == 0) pgrid[i][j].type = GHOST_LEFT;
+ 				else if(j == nx+1) pgrid[i][j].type = GHOST_RIGHT;
+ 			}
  		}
  	}
 
@@ -46,14 +48,16 @@
  		for(int j = 0; j < nx + 3; j++){
  			ugrid[i][j].x = xrange[0] + (j-1)*hx;
  			ugrid[i][j].y = yrange[0] - hy/2 + i*hy;
- 			ugrid[i][j].id = j + i*(nx+3);
- 			if(i == 0) ugrid[i][j].type = GHOST_BOTTOM;
- 			else if(i == ny+1) ugrid[i][j].type = GHOST_TOP;
- 			else if(j == 0) ugrid[i][j].type = GHOST_LEFT;
- 			else if(j == nx+2) ugrid[i][j].type = GHOST_RIGHT;
- 			else if(j == 1) ugrid[i][j].type = BOUNDARY_LEFT;
- 			else if(j == nx+1) ugrid[i][j].type = BOUNDARY_RIGHT;
- 			if (i%(ny+1) + j%(nx+2) == 0) ugrid[i][j].type = GHOST_CORNER;
+ 			if (i%(ny+1) + j%(nx+2) == 0) 
+ 				ugrid[i][j].type = GHOST_CORNER;
+ 			else{
+ 				if(i == 0) ugrid[i][j].type = GHOST_BOTTOM;
+ 				else if(i == ny+1) ugrid[i][j].type = GHOST_TOP;
+ 				else if(j == 0) ugrid[i][j].type = GHOST_LEFT;
+ 				else if(j == nx+2) ugrid[i][j].type = GHOST_RIGHT;
+ 				else if(j == 1) ugrid[i][j].type = BOUNDARY_LEFT;
+ 				else if(j == nx+1) ugrid[i][j].type = BOUNDARY_RIGHT;
+ 			}
  		}
  	}
 
@@ -61,23 +65,19 @@
  		for(int j = 0; j < nx + 2; j++){
  			vgrid[i][j].x = xrange[0] -hx/2 + j*hx;
  			vgrid[i][j].y = yrange[0] + (i-1)*hy;
- 			vgrid[i][j].id = j + i*(nx+2);
- 			if(i == 0) vgrid[i][j].type = GHOST_BOTTOM;
- 			else if(i == ny+2) vgrid[i][j].type = GHOST_TOP;
- 			else if(j == 0) vgrid[i][j].type = GHOST_LEFT;
- 			else if(j == nx+1) vgrid[i][j].type = GHOST_RIGHT;
- 			else if(i == 1) vgrid[i][j].type = BOUNDARY_BOTTOM;
- 			else if(i == ny+1) vgrid[i][j].type = BOUNDARY_TOP;
- 			if (i%(ny+2) + j%(nx+1) == 0) vgrid[i][j].type = GHOST_CORNER;
+ 			if (i%(ny+2) + j%(nx+1) == 0) 
+ 				vgrid[i][j].type = GHOST_CORNER;
+ 			else{
+ 				if(i == 0) vgrid[i][j].type = GHOST_BOTTOM;
+ 				else if(i == ny+2) vgrid[i][j].type = GHOST_TOP;
+ 				else if(j == 0) vgrid[i][j].type = GHOST_LEFT;
+ 				else if(j == nx+1) vgrid[i][j].type = GHOST_RIGHT;
+ 				else if(i == 1) vgrid[i][j].type = BOUNDARY_BOTTOM;
+ 				else if(i == ny+1) vgrid[i][j].type = BOUNDARY_TOP;
+ 			}
  		}
  	}
-
-    nPoints[0] = (nx + 3)*(ny + 2);
- 	nPoints[1] = (ny + 3)*(nx + 2);
- 	nPoints[2] = (nx + 2)*(ny + 2);
-
  	setup = true;
-
  }
 
 int Grid::ParseDataFile(FILE *f1){
