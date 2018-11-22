@@ -27,8 +27,9 @@ private:
 	void SetupGrid();
 	int ParseDataFile(FILE *f1);
 public:
-	int nx, ny;
-	double hx, hy;
+	int nx;	//number of cells in the x-direction for the u-grid
+	int ny;	//number of cells in the y-direction for the v-grid
+	double hx, hy;	//grid spacing in x and y directions
 	bool setup = false;
 	Point **pgrid;
 	Point **ugrid;

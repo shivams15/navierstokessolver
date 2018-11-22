@@ -10,6 +10,10 @@
 	if(ParseDataFile(f1)) SetupGrid();
  }
 
+/*
+Generates the grid points
+A staggered grid is used for u and v
+*/
  void Grid::SetupGrid(){
  	if(xrange[0] >= xrange[1] || yrange[0] >= yrange[1]){
  		cout << "Invalid domain range!\n";
@@ -80,6 +84,7 @@
  	setup = true;
  }
 
+//Reads user-provided parameters from the grid data file
 int Grid::ParseDataFile(FILE *f1){
 	char inp[255];
 	int err = 0;
