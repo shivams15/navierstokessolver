@@ -1,17 +1,16 @@
 #ifndef __GRID_H
 #define __GRID_H
-#define DIRICHLET 0
-#define NEUMANN 1
-#define INTERNAL 0
-#define BOUNDARY_LEFT 1
-#define BOUNDARY_RIGHT 2
-#define BOUNDARY_BOTTOM 3
-#define BOUNDARY_TOP 4
-#define GHOST_LEFT 5
-#define GHOST_RIGHT 6
-#define GHOST_BOTTOM 7
-#define GHOST_TOP 8
-#define GHOST_CORNER 9
+
+#include <fstream>
+#include <vector>
+
+using namespace std; 
+
+enum bcTypes: int8_t{DIRICHLET, NEUMANN};
+enum pointTypes: int8_t{
+	INTERNAL, BOUNDARY_LEFT, BOUNDARY_RIGHT, BOUNDARY_BOTTOM, BOUNDARY_TOP,
+	GHOST_LEFT, GHOST_RIGHT, GHOST_BOTTOM, GHOST_TOP, GHOST_CORNER
+};
 
 struct Point{
 	int id = -1;
@@ -20,20 +19,22 @@ struct Point{
 	int type = INTERNAL;
 };
 
+typedef vector<vector<Point>> Points;
+
 class Grid{
 private:
 	double xrange[2];
 	double yrange[2];
 	void SetupGrid();
-	int ParseDataFile(FILE *f1);
+	bool ParseDataFile(ifstream& fs);
 public:
-	int nx;	//number of cells in the x-direction for the u-grid
-	int ny;	//number of cells in the y-direction for the v-grid
+	int nx = -1;	//number of cells in the x-direction for the u-grid
+	int ny = -1;	//number of cells in the y-direction for the v-grid
 	double hx, hy;	//grid spacing in x and y directions
 	bool setup = false;
-	Point **pgrid;
-	Point **ugrid;
-	Point **vgrid;
+	Points pgrid;
+	Points ugrid;
+	Points vgrid;
 	int nPoints[3];
 	Grid(char* fname);
 };

@@ -1,13 +1,13 @@
 #include <iostream>
-#include <fstream>
-#include <string.h>
+#include <string>
 #include "Grid.h"
 
  using namespace std;
 
  Grid::Grid(char* fname){
-	FILE *f1 = fopen(fname,"r");
-	if(ParseDataFile(f1)) SetupGrid();
+	ifstream fs{fname};
+	if(ParseDataFile(fs)) SetupGrid();
+	fs.close();
  }
 
 /*
@@ -20,18 +20,17 @@ A staggered grid is used for u and v
  		return;
  	}
 
+ 	if(nx <= 0 || ny <= 0){
+ 		cout<<"Number of cells must be set to a positive number!\n";
+ 		return;
+ 	}
+
  	hx = (xrange[1] - xrange[0])/nx;
  	hy = (yrange[1] - yrange[0])/ny;
- 	pgrid = new Point*[ny+2];
- 	ugrid = new Point*[ny+2];
- 	vgrid = new Point*[ny+3];
-
- 	for(int i = 0; i < ny + 2; i++){
- 		pgrid[i] = new Point[nx+2];
- 		ugrid[i] = new Point[nx+3];
- 		vgrid[i] = new Point[nx+2];
- 	}
- 	vgrid[ny+2] = new Point[nx+2];
+ 	
+ 	pgrid = Points(ny+2, vector<Point>(nx+2));
+ 	ugrid = Points(ny+2, vector<Point>(nx+3));
+ 	vgrid = Points(ny+3, vector<Point>(nx+2));
 
  	for(int i = 0; i < ny + 2; i++){
  		for(int j = 0; j < nx + 2; j++){
@@ -85,30 +84,29 @@ A staggered grid is used for u and v
  }
 
 //Reads user-provided parameters from the grid data file
-int Grid::ParseDataFile(FILE *f1){
-	char inp[255];
-	int err = 0;
+bool Grid::ParseDataFile(ifstream& fs){
+	string inp{};
+	bool err = false;
 
-	if(!f1){
+	if(!fs){
 		cout << "Grid data file not found!\n";
-		err++;
+		return false;
 	}
-	else{
-		while(!feof(f1)){
-			if(fscanf(f1, "%s", inp) > 0){
-				if(!strcmp(inp, "domain")){
-					if(fscanf(f1, "%lf %lf", &xrange[0], &xrange[1]) < 2) err++;
-					if(fscanf(f1, "%lf %lf", &yrange[0], &yrange[1]) < 2) err++;
-				}
-				else if(!strcmp(inp, "n")){
-					if(fscanf(f1, "%d %d", &nx, &ny) < 2) err++;
-				}
-				else err++;
-			}
-		}
-		if(err > 0) cout << "Invalid grid data file format!\n";
+
+	while(!fs.eof()){
+		fs>>inp;
+		if(fs.eof()) break;
+		if(inp == "domain") fs>>xrange[0]>>xrange[1]>>yrange[0]>>yrange[1];
+		else if(inp == "n") fs>>nx>>ny;
+		else {err = true; break;}
+
+		if(!fs.good()) {err = true; break;}
 	}
-	if(err > 0)	return 0;
-	else return 1;
+
+	if(err){
+		cout<<"Invalid data file format!\n";
+		return false;
+	}
+	return true;
 }
 

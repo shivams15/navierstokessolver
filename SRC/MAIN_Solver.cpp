@@ -1,7 +1,4 @@
 #include <iostream>
-#include <fstream>
-#include <string.h>
-#include "petsc.h"
 #include "Grid.h"
 #include "FluidSolver.h"
 
@@ -14,11 +11,11 @@ int main(int argc, char *argv[])
 	if(argc < 3)
 		cout << "Grid data file or simulation data file not provided!\n";
 	else{
-		Grid *grid = new Grid(argv[1]);
-		if(!grid->setup) cout << "Grid setup failed!\n";
+		Grid grid {argv[1]};
+		if(!grid.setup) cout << "Grid setup failed!\n";
 		else{
-			FluidSolver *fSolver = new FluidSolver(argv[2], grid);
-			if(fSolver->setup) fSolver->Solve();
+			FluidSolver fSolver {argv[2], &grid};
+			if(fSolver.setup) fSolver.Solve();
 		}
 	}
 

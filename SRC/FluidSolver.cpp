@@ -1,20 +1,15 @@
 #include <iostream>
-#include <fstream>
-#include <string.h>
-#include "Grid.h"
+#include <string>
 #include "FluidSolver.h"
-#include "petsc.h"
 #include "petscksp.h"
 
 using namespace std;
 
 FluidSolver::FluidSolver(char *fname, Grid *grid){
 	this->grid = grid;
-
-	FILE *f1 = fopen(fname,"r");
-
-	if(ParseDataFile(f1) && SolverInitialize())
-		SolverSetup();
+	ifstream fs{fname};
+	if(ParseDataFile(fs) && SolverInitialize()) SolverSetup();
+	fs.close();
 }
 
 //Creates a new FluidField structure
@@ -35,18 +30,18 @@ void FluidSolver::ProcessGrid(){
 	int tmp = 0;
 	int nx = grid->nx;
 	int ny = grid->ny;
-	Point **pts = grid->ugrid;
+	Points* pts = &grid->ugrid;
 
 	for(int i = 0; i < ny + 2; i++){
  		for(int j = 0; j < nx + 3; j++){
- 			if(pts[i][j].type == GHOST_CORNER)
+ 			if((*pts)[i][j].type == GHOST_CORNER)
  				continue;
- 			else if(pts[i][j].type == GHOST_LEFT && bcType[0] == DIRICHLET)
+ 			else if((*pts)[i][j].type == GHOST_LEFT && bcType[0] == DIRICHLET)
  				continue;
- 			else if(pts[i][j].type == GHOST_RIGHT && bcType[1] == DIRICHLET)
+ 			else if((*pts)[i][j].type == GHOST_RIGHT && bcType[1] == DIRICHLET)
  				continue;
  			else{
- 				pts[i][j].id = tmp;
+ 				(*pts)[i][j].id = tmp;
  				tmp++;
  			}
  		}
@@ -54,17 +49,17 @@ void FluidSolver::ProcessGrid(){
  	grid->nPoints[0] = tmp;
 
  	tmp = 0;
- 	pts = grid->vgrid;
+ 	pts = &grid->vgrid;
  	for(int i = 0; i < ny + 3; i++){
  		for(int j = 0; j < nx + 2; j++){
- 			if(pts[i][j].type == GHOST_CORNER)
+ 			if((*pts)[i][j].type == GHOST_CORNER)
  				continue;
- 			else if(pts[i][j].type == GHOST_BOTTOM && bcType[2] == DIRICHLET)
+ 			else if((*pts)[i][j].type == GHOST_BOTTOM && bcType[2] == DIRICHLET)
  				continue;
- 			else if(pts[i][j].type == GHOST_TOP && bcType[3] == DIRICHLET)
+ 			else if((*pts)[i][j].type == GHOST_TOP && bcType[3] == DIRICHLET)
  				continue;
  			else{
- 				pts[i][j].id = tmp;
+ 				(*pts)[i][j].id = tmp;
  				tmp++;
  			}
  		}
@@ -72,13 +67,13 @@ void FluidSolver::ProcessGrid(){
  	grid->nPoints[1] = tmp;
 
  	tmp = 0;
- 	pts = grid->pgrid;
+ 	pts = &grid->pgrid;
  	for(int i = 0; i < ny + 2; i++){
  		for(int j = 0; j < nx + 2; j++){
- 			if(pts[i][j].type == GHOST_CORNER)
+ 			if((*pts)[i][j].type == GHOST_CORNER)
  				continue;
  			else{
- 				pts[i][j].id = tmp;
+ 				(*pts)[i][j].id = tmp;
  				tmp++;
  			}
  		}
@@ -142,7 +137,7 @@ void FluidSolver::ConstructLHS_u(){
 	double weights[3] = {0.0, 0.0, 0.0};
 	int stencil[3] = {0, 0, 0};
 
-	Point **pts = grid->ugrid;
+	Points& pts = grid->ugrid;
 
 	for(int i = 0; i < ny + 2; i++){
 		for(int j = 0; j < nx + 3; j++){
@@ -245,7 +240,7 @@ void FluidSolver::ConstructLHS_v(){
 	double weights[3] = {0.0, 0.0, 0.0};
 	int stencil[3] = {0, 0, 0};
 
-	Point **pts = grid->vgrid;
+	Points& pts = grid->vgrid;
 
 	for(int i = 0; i < ny + 3; i++){
 		for(int j = 0; j < nx + 2; j++){
@@ -344,7 +339,7 @@ void FluidSolver::ConstructLHS_phi(){
 	double weights[7] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 	int stencil[7] = {0, 0, 0, 0, 0, 0, 0};
 
-	Point **pts = grid->pgrid;
+	Points& pts = grid->pgrid;
 	for(int i = 0; i < ny + 2; i++){
 		for(int j = 0; j < nx + 2; j++){
 			if(ApplyGoverningEquation(i, j, "p")){
@@ -417,7 +412,7 @@ void FluidSolver::ConstructRHS_u(){
 	VecGetArray(prevField->u, &u);
 	VecGetArray(prevField->v, &v);
 
-	Point **pts = grid->ugrid;
+	Points& pts = grid->ugrid;
 
 	for(int i = 0; i < grid->ny+2; i++){
 		for(int j = 0; j < grid->nx+3; j++){
@@ -487,7 +482,7 @@ void FluidSolver::ConstructRHS_v(){
 	VecGetArray(prevField->u, &u);
 	VecGetArray(prevField->v, &v);
 
-	Point **pts = grid->vgrid;
+	Points& pts = grid->vgrid;
 
 	for(int i = 0; i < grid->ny+3; i++){
 		for(int j = 0; j < grid->nx+2; j++){
@@ -552,7 +547,7 @@ void FluidSolver::ConstructRHS_phi(Vec *u_star, Vec *v_star){
 Calculates the convective flux in x-direction using Roe's flux difference splitting.
 Van Leer's MUSCL scheme is used to approximate flux at the cell faces to second order accuracy.
 */
-double FluidSolver::ConvectiveDerivative_u(int i, int j, PetscScalar *u, PetscScalar *v, Point **pts){
+double FluidSolver::ConvectiveDerivative_u(int i, int j, PetscScalar *u, PetscScalar *v, Points& pts){
 	double urr, url, ulr, ull, v_U, v_D, E_R, E_L, E_U, E_D, der;
 	double hx = grid->hx;
 	double hy = grid->hy;
@@ -599,7 +594,7 @@ double FluidSolver::ConvectiveDerivative_u(int i, int j, PetscScalar *u, PetscSc
 Calculates the convective flux in y-direction using Roe's flux difference splitting.
 Van Leer's MUSCL scheme is used to approximate flux at the cell faces to second order accuracy.
 */
-double FluidSolver::ConvectiveDerivative_v(int i, int j, PetscScalar *u, PetscScalar *v, Point **pts){
+double FluidSolver::ConvectiveDerivative_v(int i, int j, PetscScalar *u, PetscScalar *v, Points& pts){
 	double vrr, vrl, vlr, vll, u_R, u_L, E_R, E_L, E_U, E_D, der;
 	double hx = grid->hx;
 	double hy = grid->hy;
@@ -765,58 +760,58 @@ void FluidSolver::ExportData(int iter, FluidField *field){
 	sprintf(f1, "u_%d.csv", iter);
 	sprintf(f2, "v_%d.csv", iter);
 	sprintf(f3, "p_%d.csv", iter);
-	FILE *f = fopen(f1, "w");
-	Point **pts = grid->ugrid;
+	ofstream fs{f1};
+	Points pts = grid->ugrid;
 
 	for(int i = 0; i < grid->ny+2; i++){
 		for(int j = 0; j < grid->nx+3; j++){
 			if(pts[i][j].type < GHOST_LEFT)
-				fprintf(f, "%lf,%lf,%lf\n", pts[i][j].x, pts[i][j].y, u[pts[i][j].id]);
+				fs<<pts[i][j].x<<","<<pts[i][j].y<<","<<u[pts[i][j].id]<<endl;
 			else if(pts[i][j].type == GHOST_BOTTOM)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i+1][j].x), 0.5*(pts[i][j].y + pts[i+1][j].y), 0.5*(u[pts[i][j].id] + u[pts[i+1][j].id]));
+				fs<<0.5*(pts[i][j].x + pts[i+1][j].x)<<","<<0.5*(pts[i][j].y + pts[i+1][j].y)<<","<<0.5*(u[pts[i][j].id] + u[pts[i+1][j].id])<<endl;
 			else if(pts[i][j].type == GHOST_TOP)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i-1][j].x), 0.5*(pts[i][j].y + pts[i-1][j].y), 0.5*(u[pts[i][j].id] + u[pts[i-1][j].id]));
+				fs<<0.5*(pts[i][j].x + pts[i-1][j].x)<<","<<0.5*(pts[i][j].y + pts[i-1][j].y)<<","<<0.5*(u[pts[i][j].id] + u[pts[i-1][j].id])<<endl;
 		}
 	}
-	fclose(f);
+	fs.close();
 
-	f = fopen(f2, "w");
+	fs.open(f2);
 	pts = grid->vgrid;
 
 	for(int i = 0; i < grid->ny+3; i++){
 		for(int j = 0; j < grid->nx+2; j++){
 			if(pts[i][j].type < GHOST_LEFT)
-				fprintf(f, "%lf,%lf,%lf\n", pts[i][j].x, pts[i][j].y, v[pts[i][j].id]);
+				fs<<pts[i][j].x<<","<<pts[i][j].y<<","<<v[pts[i][j].id]<<endl;
 			else if(pts[i][j].type == GHOST_LEFT)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i][j+1].x), 0.5*(pts[i][j].y + pts[i][j+1].y), 0.5*(v[pts[i][j].id] + v[pts[i][j+1].id]));
+				fs<<0.5*(pts[i][j].x + pts[i][j+1].x)<<","<<0.5*(pts[i][j].y + pts[i][j+1].y)<<","<<0.5*(v[pts[i][j].id] + v[pts[i][j+1].id])<<endl;
 			else if(pts[i][j].type == GHOST_RIGHT)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i][j-1].x), 0.5*(pts[i][j].y + pts[i][j-1].y), 0.5*(v[pts[i][j].id] + v[pts[i][j-1].id]));
+				fs<<0.5*(pts[i][j].x + pts[i][j-1].x)<<","<<0.5*(pts[i][j].y + pts[i][j-1].y)<<","<<0.5*(v[pts[i][j].id] + v[pts[i][j-1].id])<<endl;
 		}
 	}
-	fclose(f);
+	fs.close();
 
-	f = fopen(f3, "w");
+	fs.open(f3);
 	pts = grid->pgrid;
 
 	for(int i = 0; i < grid->ny+2; i++){
 		for(int j = 0; j < grid->nx+2; j++){
 			if(pts[i][j].type == INTERNAL)
-				fprintf(f, "%lf,%lf,%lf\n", pts[i][j].x, pts[i][j].y, p[pts[i][j].id]);
+				fs<<pts[i][j].x<<","<<pts[i][j].y<<","<<p[pts[i][j].id]<<endl;
 			else if(pts[i][j].type == GHOST_LEFT)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i][j+1].x), 0.5*(pts[i][j].y + pts[i][j+1].y), 0.5*(p[pts[i][j].id] + p[pts[i][j+1].id]));
+				fs<<0.5*(pts[i][j].x + pts[i][j+1].x)<<","<<0.5*(pts[i][j].y + pts[i][j+1].y)<<","<<0.5*(p[pts[i][j].id] + p[pts[i][j+1].id])<<endl;
 			else if(pts[i][j].type == GHOST_RIGHT)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i][j-1].x), 0.5*(pts[i][j].y + pts[i][j-1].y), 0.5*(p[pts[i][j].id] + p[pts[i][j-1].id]));
+				fs<<0.5*(pts[i][j].x + pts[i][j-1].x)<<","<<0.5*(pts[i][j].y + pts[i][j-1].y)<<","<<0.5*(p[pts[i][j].id] + p[pts[i][j-1].id])<<endl;
 			else if(pts[i][j].type == GHOST_BOTTOM)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i+1][j].x), 0.5*(pts[i][j].y + pts[i+1][j].y), 0.5*(p[pts[i][j].id] + p[pts[i+1][j].id]));
+				fs<<0.5*(pts[i][j].x + pts[i+1][j].x)<<","<<0.5*(pts[i][j].y + pts[i+1][j].y)<<","<<0.5*(p[pts[i][j].id] + p[pts[i+1][j].id])<<endl;
 			else if(pts[i][j].type == GHOST_TOP)
-				fprintf(f, "%lf,%lf,%lf\n", 0.5*(pts[i][j].x + pts[i-1][j].x), 0.5*(pts[i][j].y + pts[i-1][j].y), 0.5*(p[pts[i][j].id] + p[pts[i-1][j].id]));
+				fs<<0.5*(pts[i][j].x + pts[i-1][j].x)<<","<<0.5*(pts[i][j].y + pts[i-1][j].y)<<","<<0.5*(p[pts[i][j].id] + p[pts[i-1][j].id])<<endl;
 		}
 	}
-	fclose(f);
+	fs.close();
 }
 
 //Finds the minimum and maximum values of a vector(ignoring the ghost points)
-void FluidSolver::VecMinMax(double* min, double* max, Point** pts, int n1, int n2, Vec* u){
+void FluidSolver::VecMinMax(double* min, double* max, Points& pts, int n1, int n2, Vec* u){
 	*min = INFINITY;
 	*max = -INFINITY;
 	int size;
@@ -839,25 +834,25 @@ void FluidSolver::VecMinMax(double* min, double* max, Point** pts, int n1, int n
 //Returns the stencil required for numerical approximation of the Laplacian at a point
 int* FluidSolver::StencilLaplacian(int i, int j, const char *var){
 	int *stencil = new int[5];
-	Point **pts;
+	Points* pts;
 	if(!strcmp(var,"u"))
-		pts = grid->ugrid;
+		pts = &grid->ugrid;
 	else if(!strcmp(var,"v"))
-		pts = grid->vgrid;
+		pts = &grid->vgrid;
 	else if(!strcmp(var,"p"))
-		pts = grid->pgrid;
-	stencil[0] = pts[i][j+1].id;
-	stencil[1] = pts[i][j-1].id;
-	stencil[2] = pts[i][j].id;
-	stencil[3] = pts[i+1][j].id;
-	stencil[4] = pts[i-1][j].id;
+		pts = &grid->pgrid;
+	stencil[0] = (*pts)[i][j+1].id;
+	stencil[1] = (*pts)[i][j-1].id;
+	stencil[2] = (*pts)[i][j].id;
+	stencil[3] = (*pts)[i+1][j].id;
+	stencil[4] = (*pts)[i-1][j].id;
 
 	return stencil;
 }
 
 //Constructs the stencil required for approximation of the Laplacian at a pressure ghost point
 int FluidSolver::StencilLaplacian_PressureGhostPoint(int i, int j, int* stencil, double* weights){
-	Point **pts = grid->pgrid;
+	Points& pts = grid->pgrid;
 	double hx = grid->hx;
 	double hy = grid->hy;
 	int size = 0;
@@ -916,24 +911,24 @@ int FluidSolver::StencilLaplacian_PressureGhostPoint(int i, int j, int* stencil,
 }
 
 bool FluidSolver::ApplyGoverningEquation(int i, int j, const char *var){
-	Point **pts;
+	Points* pts;
 	if(!strcmp(var,"u"))
-		pts = grid->ugrid;
+		pts = &grid->ugrid;
 	else if(!strcmp(var,"v"))
-		pts = grid->vgrid;
+		pts = &grid->vgrid;
 	else if(!strcmp(var,"p"))
-		pts = grid->pgrid;
-	if(pts[i][j].type == INTERNAL)
+		pts = &grid->pgrid;
+	if((*pts)[i][j].type == INTERNAL)
 		return true;
-	else if(pts[i][j].type >= GHOST_LEFT)
+	else if((*pts)[i][j].type >= GHOST_LEFT)
 		return false;
-	else if(bcType[pts[i][j].type-1] == NEUMANN)
+	else if(bcType[(*pts)[i][j].type-1] == NEUMANN)
 		return true;
 	else return false;
 }
 
 //Calculates slope limiter for the MUSCL reconstruction of interface fluxes
-double FluidSolver::SlopeLimiter(int i, int j, Point **pts, PetscScalar *var, const char *dir){
+double FluidSolver::SlopeLimiter(int i, int j, Points& pts, PetscScalar *var, const char *dir){
 	double s = 0;
 	double hx = grid->hx;
 	double hy = grid->hy;
@@ -960,84 +955,65 @@ void FluidSolver::CreateMatrix(Mat *A, int n1, int n2){
 }
 
 //Reads user parameters from the data file provided
-int FluidSolver::ParseDataFile(FILE *f1){
-	char inp[255];
-	int err = 0;
+bool FluidSolver::ParseDataFile(ifstream& fs){
+	string inp{};
+	bool err = false;
 
-	if(!f1){
+	if(!fs){
 		cout << "Simulation data file not found!\n";
-		err++;
+		return false;
 	}
-	else{
-		while(!feof(f1)){
-			if(fscanf(f1, "%s", inp) > 0){
-				if(!strcmp(inp, "leftbc")){
-					if(fscanf(f1, "%d", &bcType[0]) < 1) err++;
-					else if(bcType[0] > 1){
-						cout << "Invalid boundary condition type!\n";
-						err++;
-					}
-					else if(bcType[0] == DIRICHLET){
-						if(fscanf(f1, "%s", inp) > 0 && !strcmp(inp, "value")){
-							if(fscanf(f1, "%lf %lf", &ub[0], &vb[0]) < 2) err++;
-						}
-						else err++;
-					}
-				}
-				else if(!strcmp(inp, "rightbc")){
-					if(fscanf(f1, "%d", &bcType[1]) < 1) err++;
-					else if(bcType[1] > 1){
-						cout << "Invalid boundary condition type!\n";
-						err++;
-					}
-					else if(bcType[1] == DIRICHLET){
-						if(fscanf(f1, "%s", inp) > 0 && !strcmp(inp, "value")){
-							if(fscanf(f1, "%lf %lf", &ub[1], &vb[1]) < 2) err++;
-						}
-						else err++;
-					}
-				}
-				else if(!strcmp(inp, "bottombc")){
-					if(fscanf(f1, "%d", &bcType[2]) < 1) err++;
-					else if(bcType[2] > 1){
-						cout << "Invalid boundary condition type!\n";
-						err++;
-					}
-					else if(bcType[2] == DIRICHLET){
-						if(fscanf(f1, "%s", inp) > 0 && !strcmp(inp, "value")){
-							if(fscanf(f1, "%lf %lf", &ub[2], &vb[2]) < 2) err++;
-						}
-						else err++;
-					}
-				}
-				else if(!strcmp(inp, "topbc")){
-					if(fscanf(f1, "%d", &bcType[3]) < 1) err++;
-					else if(bcType[3] > 1){
-						cout << "Invalid boundary condition type!\n";
-						err++;
-					}
-					else if(bcType[3] == DIRICHLET){
-						if(fscanf(f1, "%s", inp) > 0 && !strcmp(inp, "value")){
-							if(fscanf(f1, "%lf %lf", &ub[3], &vb[3]) < 2) err++;
-						}
-						else err++;
-					}
-				}
-				else if(!strcmp(inp, "dt")){
-					if(fscanf(f1, "%lf", &dt) < 1) err++;
-				}
-				else if(!strcmp(inp, "final_time")){
-					if(fscanf(f1, "%lf", &finalTime) < 1) err++;
-				}
-				else if(!strcmp(inp, "re")){
-					if(fscanf(f1, "%lf", &re) < 1) err++;
-				}
-				else if(!strcmp(inp, "saveIter"))
-					fscanf(f1, "%d", &saveIter);
+
+	while(!fs.eof()){
+		fs>>inp;
+		if(fs.eof()) break;
+		if(inp == "leftbc"){
+			fs>>bcType[0];
+			if(!fs.good()) {err = true; break;}
+			if(bcType[0] > 1 || bcType[0] < 0){
+				cout<<"Invalid boundary condition type!\n";
+				return false;
 			}
+			if(bcType[0] ==  DIRICHLET) fs>>ub[0]>>vb[0];
 		}
-		if(err > 0) cout << "Invalid data file format!\n";
+		else if(inp == "rightbc"){
+			fs>>bcType[1];
+			if(!fs.good()) {err = true; break;}
+			if(bcType[1] > 1 || bcType[1] < 0){
+				cout<<"Invalid boundary condition type!\n";
+				return false;
+			}
+			if(bcType[1] ==  DIRICHLET) fs>>ub[1]>>vb[1];
+		}
+		else if(inp == "bottombc"){
+			fs>>bcType[2];
+			if(!fs.good()) {err = true; break;}
+			if(bcType[2] > 1 || bcType[2] < 0){
+				cout<<"Invalid boundary condition type!\n";
+				return false;
+			}
+			if(bcType[2] ==  DIRICHLET) fs>>ub[2]>>vb[2];
+		}
+		else if(inp == "topbc"){
+			fs>>bcType[3];
+			if(!fs.good()) {err = true; break;}
+			if(bcType[3] > 1 || bcType[3] < 0){
+				cout<<"Invalid boundary condition type!\n";
+				return false;
+			}
+			if(bcType[3] ==  DIRICHLET) fs>>ub[3]>>vb[3];
+		}
+		else if(inp == "dt") fs>>dt;
+		else if(inp == "final_time") fs>>finalTime;
+		else if(inp == "re") fs>>re;
+		else if(inp == "saveIter") fs>>saveIter;
+		else {err = true; break;}
+
+		if(!fs.good()) {err = true; break;}
 	}
-	if(err > 0) return 0;
-	else return 1;
+	if(err){
+		cout<<"Invalid data file format!\n";
+		return false;
+	}
+	return true;
 }

@@ -29,7 +29,7 @@ private:
 	double ub[4] = {0.0, 0.0, 0.0, 0.0};	//boundary values of u(if specified)
 	double vb[4] = {0.0, 0.0, 0.0, 0.0};	//boundary values of v(if specified)
 	int saveIter = 50;		//data is exported after every <saveIter> iterations
-	int ParseDataFile(FILE *f1);
+	bool ParseDataFile(ifstream& fs);
 	int SolverInitialize();
 	void ProcessGrid();
 	void SolverSetup();
@@ -46,11 +46,11 @@ private:
 	void ConstructRHS_u();
 	void ConstructRHS_v();
 	void ConstructRHS_phi(Vec *u_star, Vec *v_star);
-	double ConvectiveDerivative_u(int i, int j, PetscScalar *u, PetscScalar *v, Point **pts);
-	double ConvectiveDerivative_v(int i, int j, PetscScalar *u, PetscScalar *v, Point **pts);
+	double ConvectiveDerivative_u(int i, int j, PetscScalar *u, PetscScalar *v, Points& pts);
+	double ConvectiveDerivative_v(int i, int j, PetscScalar *u, PetscScalar *v, Points& pts);
 	void ExportData(int iter, FluidField *field);
-	void VecMinMax(double* min, double* max, Point** pts, int n1, int n2, Vec* u);
-	double SlopeLimiter(int i, int j, Point **pts, PetscScalar *var, const char *dir);
+	void VecMinMax(double* min, double* max, Points& pts, int n1, int n2, Vec* u);
+	double SlopeLimiter(int i, int j, Points& pts, PetscScalar *var, const char *dir);
 	double minmode(double a, double b);
 public:
 	bool setup = false;
