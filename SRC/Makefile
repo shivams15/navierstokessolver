@@ -1,6 +1,6 @@
 CC = mpiCC
-CFLAGS = -std=c++11 -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(MPI_DIR)/include
-LFLAGS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -Wl,--rpath,$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
+CFLAGS = -std=c++11 -I$(PETSC_DIR) -I$(MPI_DIR)/include
+LFLAGS = -L/usr/lib64 -Wl,--rpath,/usr/lib64 -lpetsc
 OBJ = Grid.o FluidSolver.o MAIN_Solver.o
 
 main: $(OBJ)
