@@ -393,7 +393,7 @@ void FluidSolver::ConstructLHS_phi(){
 				MatSetValues(dvdy,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
 			}
 			else{
-				weights[0] = 1.0; weights[1] = -1.0; weights[2] = 0;
+				weights[0] = 1.0; weights[1] = -1.0; weights[2] = 0.0;
 				stencil[0] = pts[i][j].id;
 				if(pts[i][j].type == GHOST_BOTTOM){
 					stencil[1] = pts[i+1][j].id; stencil[2] = pts[i+2][j].id; 
