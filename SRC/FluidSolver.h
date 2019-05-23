@@ -12,9 +12,8 @@ struct FluidField{
 
 class FluidSolver{
 private:
-	FluidField *prevField;
-	FluidField *nextField;
-	Grid *grid;
+	FluidField *prevField, *nextField;
+	Grid* grid;
 	double dt;	//time step
 	double finalTime;	//end time 
 	double re;	//Reynolds number
@@ -33,7 +32,7 @@ private:
 	int SolverInitialize();
 	void ProcessGrid();
 	void SolverSetup();
-	void CreateFluidField(FluidField **fField);
+	void CreateFluidField(FluidField*& fField);
 	void CreateMatrix(Mat *A, int m, int n);
 	int* StencilLaplacian(int i, int j, const char *var);
 	int StencilLaplacian_PressureGhostPoint(int i, int j, int* stencil, double* weights);
@@ -54,7 +53,7 @@ private:
 	double minmode(double a, double b);
 public:
 	bool setup = false;
-	FluidSolver(char *fname, Grid *grid);
+	FluidSolver(char* fname, Grid* grid);
 	void Solve();
 };
 

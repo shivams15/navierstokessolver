@@ -5,7 +5,7 @@
 
 using namespace std;
 
-FluidSolver::FluidSolver(char *fname, Grid *grid){
+FluidSolver::FluidSolver(char* fname, Grid* grid){
 	this->grid = grid;
 	ifstream fs{fname};
 	if(ParseDataFile(fs) && SolverInitialize()) SolverSetup();
@@ -13,16 +13,16 @@ FluidSolver::FluidSolver(char *fname, Grid *grid){
 }
 
 //Creates a new FluidField structure
-void FluidSolver::CreateFluidField(FluidField **fField){
-	*fField = new FluidField;
-	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[0], &((*fField)->u));
-	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[1], &((*fField)->v));
-	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &(*fField)->phi);
-	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &(*fField)->p);
-	VecSet((*fField)->u,0.0);
-	VecSet((*fField)->v,0.0);
-	VecSet((*fField)->phi,0.0);
-	VecSet((*fField)->p,0.0);
+void FluidSolver::CreateFluidField(FluidField*& fField){
+	fField = new FluidField;
+	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[0], &(fField->u));
+	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[1], &(fField->v));
+	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &(fField->phi));
+	VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &(fField->p));
+	VecSet(fField->u,0.0);
+	VecSet(fField->v,0.0);
+	VecSet(fField->phi,0.0);
+	VecSet(fField->p,0.0);
 }
 
 //Assigns an 'id' to each point in u, v, and p grids
@@ -662,8 +662,8 @@ int FluidSolver::SolverInitialize(){
 	}
 	else{
 		ProcessGrid();
-		CreateFluidField(&prevField);
-		CreateFluidField(&nextField);
+		CreateFluidField(prevField);
+		CreateFluidField(nextField);
 		CreateMatrix(&LHS_u, grid->nPoints[0], grid->nPoints[0]);
 		CreateMatrix(&lap_u, grid->nPoints[0], grid->nPoints[0]);
 		CreateMatrix(&dt_u, grid->nPoints[0], grid->nPoints[0]);
