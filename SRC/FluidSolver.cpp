@@ -182,7 +182,17 @@ void FluidSolver::ConstructLHS_u(){
 						weights[1] = -1.0;
 					}
 					MatSetValues(LHS_u,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
-					if(j != 1 && j!= nx+1){
+					if(j == 1){
+						weights[0] = -2.0/hx; weights[1] = 3.0/hx; weights[2] = -1.0/hx;
+						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i][j+1].id; stencil[2] = grid->pgrid[i][j+2].id;
+						MatSetValues(dpdx,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else if(j == nx+1){
+						weights[0] = 2.0/hx; weights[1] = -3.0/hx; weights[2] = 1.0/hx;
+						stencil[0] = grid->pgrid[i][j-1].id; stencil[1] = grid->pgrid[i][j-2].id; stencil[2] = grid->pgrid[i][j-3].id;
+						MatSetValues(dpdx,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else{
 						weights[0] = 1.0/hx; weights[1] = -1.0/hx;
 						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i][j-1].id;
 						MatSetValues(dpdx,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
@@ -199,7 +209,17 @@ void FluidSolver::ConstructLHS_u(){
 						weights[1] = -1.0;
 					}
 					MatSetValues(LHS_u,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
-					if(j != 1 && j!= nx+1){
+					if(j == 1){
+						weights[0] = -2.0/hx; weights[1] = 3.0/hx; weights[2] = -1.0/hx;
+						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i][j+1].id; stencil[2] = grid->pgrid[i][j+2].id;
+						MatSetValues(dpdx,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else if(j == nx+1){
+						weights[0] = 2.0/hx; weights[1] = -3.0/hx; weights[2] = 1.0/hx;
+						stencil[0] = grid->pgrid[i][j-1].id; stencil[1] = grid->pgrid[i][j-2].id; stencil[2] = grid->pgrid[i][j-3].id;
+						MatSetValues(dpdx,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else{
 						weights[0] = 1.0/hx; weights[1] = -1.0/hx;
 						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i][j-1].id;
 						MatSetValues(dpdx,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
@@ -285,7 +305,17 @@ void FluidSolver::ConstructLHS_v(){
 						weights[1] = -1.0;
 					}
 					MatSetValues(LHS_v,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
-					if(i != 1 && i!= ny+1){
+					if(i == 1){
+						weights[0] = -2.0/hy; weights[1] = 3.0/hy; weights[2] = -1.0/hy;
+						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i+1][j].id; stencil[2] = grid->pgrid[i+2][j].id;
+						MatSetValues(dpdy,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else if(i == ny+1){
+						weights[0] = 2.0/hy; weights[1] = -3.0/hy; weights[2] = 1.0/hy;
+						stencil[0] = grid->pgrid[i-1][j].id; stencil[1] = grid->pgrid[i-2][j].id; stencil[2] = grid->pgrid[i-3][j].id;
+						MatSetValues(dpdy,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else{
 						weights[0] = 1.0/hy; weights[1] = -1.0/hy;
 						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i-1][j].id;
 						MatSetValues(dpdy,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
@@ -302,7 +332,17 @@ void FluidSolver::ConstructLHS_v(){
 						weights[1] = -1.0;
 					}
 					MatSetValues(LHS_v,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
-					if(i != 1 && i!= ny+1){
+					if(i == 1){
+						weights[0] = -2.0/hy; weights[1] = 3.0/hy; weights[2] = -1.0/hy;
+						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i+1][j].id; stencil[2] = grid->pgrid[i+2][j].id;
+						MatSetValues(dpdy,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else if(i == ny+1){
+						weights[0] = 2.0/hy; weights[1] = -3.0/hy; weights[2] = 1.0/hy;
+						stencil[0] = grid->pgrid[i-1][j].id; stencil[1] = grid->pgrid[i-2][j].id; stencil[2] = grid->pgrid[i-3][j].id;
+						MatSetValues(dpdy,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					}
+					else{
 						weights[0] = 1.0/hy; weights[1] = -1.0/hy;
 						stencil[0] = grid->pgrid[i][j].id; stencil[1] = grid->pgrid[i-1][j].id;
 						MatSetValues(dpdy,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
@@ -353,18 +393,26 @@ void FluidSolver::ConstructLHS_phi(){
 				MatSetValues(dvdy,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
 			}
 			else{
-				weights[0] = 1.0; weights[1] = -1.0;
+				weights[0] = 1.0; weights[1] = -1.0; weights[2] = 0;
 				stencil[0] = pts[i][j].id;
-				if(pts[i][j].type == GHOST_BOTTOM)
-					stencil[1] = pts[i+1][j].id; 
-				else if(pts[i][j].type == GHOST_TOP)
-					stencil[1] = pts[i-1][j].id; 
-				else if(pts[i][j].type == GHOST_LEFT)
-					stencil[1] = pts[i][j+1].id; 
-				else if(pts[i][j].type == GHOST_RIGHT)
-					stencil[1] = pts[i][j-1].id; 
+				if(pts[i][j].type == GHOST_BOTTOM){
+					stencil[1] = pts[i+1][j].id; stencil[2] = pts[i+2][j].id; 
+					if(bcType[2] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0;
+				}
+				else if(pts[i][j].type == GHOST_TOP){
+					stencil[1] = pts[i-1][j].id; stencil[2] = pts[i-2][j].id;
+					if(bcType[3] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0; 
+				}
+				else if(pts[i][j].type == GHOST_LEFT){
+					stencil[1] = pts[i][j+1].id; stencil[2] = pts[i][j+2].id; 
+					if(bcType[0] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0; 
+				}
+				else if(pts[i][j].type == GHOST_RIGHT){
+					stencil[1] = pts[i][j-1].id; stencil[2] = pts[i][j-2].id;
+					if(bcType[1] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0;   
+				}
 				if(pts[i][j].type != GHOST_CORNER){
-					MatSetValues(LHS_phi,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					MatSetValues(LHS_phi,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
 					MatSetValues(lap_phi,1,&(pts[i][j].id),StencilLaplacian_PressureGhostPoint(i,j,stencil,weights),stencil,(PetscScalar *)weights,INSERT_VALUES);
 				}
 			}
@@ -423,20 +471,14 @@ void FluidSolver::ConstructRHS_u(){
 			else{
 				if(pts[i][j].type > INTERNAL && pts[i][j].type < GHOST_LEFT)
 					VecSetValues(bc, 1, &(pts[i][j].id), &ub[pts[i][j].type-1], INSERT_VALUES);
-				else if(pts[i][j].type == GHOST_LEFT && bcType[0] == NEUMANN){
-					tmp = dt*(dphidx[pts[i][j].id] - dphidx[pts[i][j+2].id]);
+				else if(pts[i][j].type == GHOST_BOTTOM){
+					if(bcType[2] == DIRICHLET) tmp = 2*(ub[2] + 0.5*dt*(dphidx[pts[i][j].id] + dphidx[pts[i+1][j].id]));
+					else tmp = dt*(dphidx[pts[i][j].id] - dphidx[pts[i+1][j].id]);
 					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
 				}
-				else if(pts[i][j].type == GHOST_RIGHT && bcType[1] == NEUMANN){
-					tmp = dt*(dphidx[pts[i][j].id] - dphidx[pts[i][j-2].id]);
-					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
-				}
-				else if(pts[i][j].type == GHOST_BOTTOM && bcType[2] == DIRICHLET){
-					tmp = 2*(ub[2] + 0.5*dt*(dphidx[pts[i][j].id] + dphidx[pts[i+1][j].id]));
-					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
-				}
-				else if(pts[i][j].type == GHOST_TOP && bcType[3] == DIRICHLET){
-					tmp = 2*(ub[3] + 0.5*dt*(dphidx[pts[i][j].id] + dphidx[pts[i-1][j].id]));
+				else if(pts[i][j].type == GHOST_TOP){
+					if(bcType[3] == DIRICHLET) tmp = 2*(ub[3] + 0.5*dt*(dphidx[pts[i][j].id] + dphidx[pts[i-1][j].id]));
+					else tmp = dt*(dphidx[pts[i][j].id] - dphidx[pts[i-1][j].id]);
 					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
 				}
 			}
@@ -493,20 +535,14 @@ void FluidSolver::ConstructRHS_v(){
 			else{
 				if(pts[i][j].type > INTERNAL && pts[i][j].type < GHOST_LEFT)
 					VecSetValues(bc, 1, &(pts[i][j].id), &vb[pts[i][j].type-1], INSERT_VALUES);
-				else if(pts[i][j].type == GHOST_BOTTOM && bcType[2] == NEUMANN){
-					tmp = dt*(dphidy[pts[i][j].id] - dphidy[pts[i+2][j].id]);
+				else if(pts[i][j].type == GHOST_LEFT){
+					if(bcType[0] == DIRICHLET) tmp = 2*(vb[0] + 0.5*dt*(dphidy[pts[i][j].id] + dphidy[pts[i][j+1].id]));
+					else tmp = dt*(dphidy[pts[i][j].id] - dphidy[pts[i][j+1].id]);
 					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
 				}
-				else if(pts[i][j].type == GHOST_TOP && bcType[3] == NEUMANN){
-					tmp = dt*(dphidy[pts[i][j].id] - dphidy[pts[i-2][j].id]);
-					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
-				}
-				else if(pts[i][j].type == GHOST_LEFT && bcType[0] == DIRICHLET){
-					tmp = 2*(vb[0] + 0.5*dt*(dphidy[pts[i][j].id] + dphidy[pts[i][j+1].id]));
-					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
-				}
-				else if(pts[i][j].type == GHOST_RIGHT && bcType[1] == DIRICHLET){
-					tmp = 2*(vb[1] + 0.5*dt*(dphidy[pts[i][j].id] + dphidy[pts[i][j-1].id]));
+				else if(pts[i][j].type == GHOST_RIGHT){
+					if(bcType[1] == DIRICHLET) tmp = 2*(vb[1] + 0.5*dt*(dphidy[pts[i][j].id] + dphidy[pts[i][j-1].id]));
+					else tmp = dt*(dphidy[pts[i][j].id] - dphidy[pts[i][j-1].id]);
 					VecSetValues(bc, 1, &(pts[i][j].id), &tmp, INSERT_VALUES);
 				}
 			}
