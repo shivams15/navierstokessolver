@@ -487,8 +487,10 @@ void FluidSolver::ConstructRHS_u(){
 
 	VecAXPY(RHS_u, dt, dudt);
 	VecAXPY(RHS_u, dt/(2*re), uLap);
-	VecAXPY(RHS_u, -dt, convectiveDer);
+	VecAXPY(RHS_u, -1.5*dt, convectiveDer);
+	VecAXPY(RHS_u, 0.5*dt, convectiveDer_u0);
 	VecAXPY(RHS_u, 1.0, bc);
+	VecCopy(convectiveDer, convectiveDer_u0);
 
 	VecDestroy(&uLap);
 	VecDestroy(&convectiveDer);
@@ -551,8 +553,10 @@ void FluidSolver::ConstructRHS_v(){
 
 	VecAXPY(RHS_v, dt, dvdt);
 	VecAXPY(RHS_v, dt/(2*re), vLap);
-	VecAXPY(RHS_v, -dt, convectiveDer);
+	VecAXPY(RHS_v, -1.5*dt, convectiveDer);
+	VecAXPY(RHS_v, 0.5*dt, convectiveDer_v0);
 	VecAXPY(RHS_v, 1.0, bc);
+	VecCopy(convectiveDer, convectiveDer_v0);
 
 	VecDestroy(&vLap);
 	VecDestroy(&convectiveDer);
@@ -715,6 +719,10 @@ int FluidSolver::SolverInitialize(){
 		VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[0], &RHS_u);
 		VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[1], &RHS_v);
 		VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[2], &RHS_phi);
+		VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[0], &convectiveDer_u0);
+		VecCreateSeq(PETSC_COMM_SELF, grid->nPoints[1], &convectiveDer_v0);
+		VecSet(convectiveDer_u0, 0.0);
+		VecSet(convectiveDer_v0, 0.0);
 		return 1;
 	}
 }

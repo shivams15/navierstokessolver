@@ -17,6 +17,7 @@ private:
 	double dt;	//time step
 	double finalTime;	//end time 
 	double re;	//Reynolds number
+	Vec convectiveDer_u0, convectiveDer_v0;
 	Mat LHS_u, LHS_v, LHS_phi;			
 	Vec RHS_u, RHS_v, RHS_phi;
 	Mat lap_u, lap_v, lap_phi;	
