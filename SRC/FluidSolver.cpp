@@ -115,7 +115,7 @@ void FluidSolver::ConfigureKSPSolver1(KSP *solver, Mat *A){
 	KSPSetType(*solver, KSPBCGSL);
 	KSPGetPC(*solver, &pc);
 	PCSetType(pc, PCBJACOBI);
-	KSPSetTolerances(*solver, 1.e-12, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+	KSPSetTolerances(*solver, 1.e-8, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
 	KSPSetUp(*solver);
 }
 
@@ -393,26 +393,26 @@ void FluidSolver::ConstructLHS_phi(){
 				MatSetValues(dvdy,1,&(pts[i][j].id),2,stencil,(PetscScalar *)weights,INSERT_VALUES);
 			}
 			else{
-				weights[0] = 1.0; weights[1] = -1.0; weights[2] = 0.0;
+				weights[0] = 1.0; weights[1] = -1.0; weights[2] = 0.0; weights[3] = 0.0;
 				stencil[0] = pts[i][j].id;
 				if(pts[i][j].type == GHOST_BOTTOM){
-					stencil[1] = pts[i+1][j].id; stencil[2] = pts[i+2][j].id; 
-					if(bcType[2] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0;
+					stencil[1] = pts[i+1][j].id; stencil[2] = pts[i+2][j].id; stencil[3] = pts[i+3][j].id; 
+					if(bcType[2] == NEUMANN) {weights[0] = 2.0; weights[1] = -5.0; weights[2] = 4.0; weights[3] = -1.0;}
 				}
 				else if(pts[i][j].type == GHOST_TOP){
-					stencil[1] = pts[i-1][j].id; stencil[2] = pts[i-2][j].id;
-					if(bcType[3] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0; 
+					stencil[1] = pts[i-1][j].id; stencil[2] = pts[i-2][j].id; stencil[3] = pts[i-3][j].id; 
+					if(bcType[3] == NEUMANN) {weights[0] = 2.0; weights[1] = -5.0; weights[2] = 4.0; weights[3] = -1.0;} 
 				}
 				else if(pts[i][j].type == GHOST_LEFT){
-					stencil[1] = pts[i][j+1].id; stencil[2] = pts[i][j+2].id; 
-					if(bcType[0] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0; 
+					stencil[1] = pts[i][j+1].id; stencil[2] = pts[i][j+2].id; stencil[3] = pts[i][j+3].id; 
+					if(bcType[0] == NEUMANN) {weights[0] = 2.0; weights[1] = -5.0; weights[2] = 4.0; weights[3] = -1.0;} 
 				}
 				else if(pts[i][j].type == GHOST_RIGHT){
-					stencil[1] = pts[i][j-1].id; stencil[2] = pts[i][j-2].id;
-					if(bcType[1] == NEUMANN) weights[1] = -2.0; weights[2] = 1.0;   
+					stencil[1] = pts[i][j-1].id; stencil[2] = pts[i][j-2].id; stencil[3] = pts[i][j-3].id; 
+					if(bcType[1] == NEUMANN) {weights[0] = 2.0; weights[1] = -5.0; weights[2] = 4.0; weights[3] = -1.0;}   
 				}
 				if(pts[i][j].type != GHOST_CORNER){
-					MatSetValues(LHS_phi,1,&(pts[i][j].id),3,stencil,(PetscScalar *)weights,INSERT_VALUES);
+					MatSetValues(LHS_phi,1,&(pts[i][j].id),4,stencil,(PetscScalar *)weights,INSERT_VALUES);
 					MatSetValues(lap_phi,1,&(pts[i][j].id),StencilLaplacian_PressureGhostPoint(i,j,stencil,weights),stencil,(PetscScalar *)weights,INSERT_VALUES);
 				}
 			}
