@@ -4,3 +4,8 @@ grid
 main
 *.input
 *.csv
+*.jpeg
+*.tiff
+*.eps
+*.fig
+*.pvd
