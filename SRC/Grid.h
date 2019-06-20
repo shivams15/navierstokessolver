@@ -7,13 +7,23 @@
 
 using namespace std; 
 
-enum bcTypes: int8_t{DIRICHLET, NEUMANN};
+enum bcTypes: int8_t{INLET_UNI, INLET_PARABOLIC, WALL, PRESSURE, NEUMANN};
+
+struct Stencil
+{
+	vector<double> weights;
+	vector<vector<int>> support;
+	vector<double> constant;	
+};
+
+typedef vector<Stencil> StencilList;
 
 struct Edge{
 	int nx,ny; //Information on orientation of the boundaries
 	vector<double> loc {0,0,0}; //Information on the boundary location
-	int bcType;	//Type of boundary condition
-	vector<double> bcInfo;	//Information required for implementing the boundary condition
+	int bcType {-1};	//Type of boundary condition
+	double bcInfo {1.0};	//Information required for implementing the boundary condition
+	StencilList ghost; //Ghost point implicitly represented in terms of the interior points
 };
 
 typedef vector<Edge> EdgeList;
@@ -23,7 +33,7 @@ struct Cell{
 	double x,y;	//Coordinates of the cell center
 	vector<double> X {0,0}; //Coordinates of the face centers
 	vector<double> Y {0,0};
-	set<int> edges;	//List of boundaries adjacent to the cell
+	vector<int> edges {-1,-1,-1,-1};	//List of boundaries adjacent to the cell
 };
 
 typedef vector<vector<Cell>> CellList;
@@ -42,8 +52,7 @@ private:
 	void Cleanup();
 	bool Interior(Cell&);
 	void Show();
-	void ShowEdges();
-	void ExportData();
+	// void ExportData();
 	bool ParseDataFile(ifstream& fs);
 	bool equals(double, double);
 public:
@@ -55,6 +64,8 @@ public:
 	CellList cells;	//List of cells in the grid
 	EdgeList edges;	//List of boundaries
 	bool setup = false;
+	void ShowEdges(bool BC = false);
+	bool inDomain(int, int);
 	Grid(char* fname);
 };
 

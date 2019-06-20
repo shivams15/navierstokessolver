@@ -1,5 +1,6 @@
 #include <iostream>
 #include "Grid.h"
+#include "petsc.h"
 #include "FluidSolver.h"
 
 using namespace std;

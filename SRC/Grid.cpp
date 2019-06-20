@@ -12,7 +12,7 @@ Grid::Grid(char* fname){
 	ifstream fs{fname};
 	if(ParseDataFile(fs)) SetupGrid();
 	fs.close();
-	ExportData();
+	// ExportData();
 }
 
 void Grid::SetupGrid(){
@@ -169,14 +169,14 @@ bool Grid::Interior(Cell& cell){
  		if(e.nx != 0){
  			if(cell.y > e.loc[1] && cell.y < e.loc[2]){
  				if(e.loc[0] > cell.x) intersect++;
- 				if(e.nx == -1 && equals(cell.X[0], e.loc[0])) cell.edges.insert(i);
- 				if(e.nx == 1 && equals(cell.X[1], e.loc[0])) cell.edges.insert(i);
+ 				if(e.nx == -1 && equals(cell.X[0], e.loc[0])) cell.edges[0] = i;
+ 				if(e.nx == 1 && equals(cell.X[1], e.loc[0])) cell.edges[1] = i;
  			} 
  		}
  		else{
  			if(cell.x > e.loc[1] && cell.x < e.loc[2]){
- 				if(e.ny == -1 && equals(cell.Y[0], e.loc[0])) cell.edges.insert(i);
- 				if(e.ny == 1 && equals(cell.Y[1], e.loc[0])) cell.edges.insert(i);
+ 				if(e.ny == -1 && equals(cell.Y[0], e.loc[0])) cell.edges[2] = i;
+ 				if(e.ny == 1 && equals(cell.Y[1], e.loc[0])) cell.edges[3] = i;
  			} 
  		}
  	}
@@ -195,37 +195,45 @@ void Grid::Show(){
  	cout<<"hx:\t"<<*min_element(hx.begin(),hx.end())<<"\t"
  					<<*max_element(hx.begin(),hx.end())<<endl;
  	cout<<"hy:\t"<<*min_element(hy.begin(),hy.end())<<"\t"
- 					<<*max_element(hy.begin(),hy.end())<<endl;
+ 					<<*max_element(hy.begin(),hy.end())<<endl<<endl;
 }
 
 //Prints information about the boundaries
-void Grid::ShowEdges(){
+void Grid::ShowEdges(bool BC){
  	cout<<endl;
  	for(int i = 0; i < edges.size(); i++){
  		Edge e = edges[i];
  		cout<<"Edge\t"<<i<<":\t"<<"n\t"<<e.nx<<"\t"<<e.ny<<"\t";
  		if(e.nx != 0) cout<<"x\t"<<e.loc[0]<<"\ty\t"<<e.loc[1]<<"\t"<<e.loc[2]<<endl;
  		else cout<<"y\t"<<e.loc[0]<<"\tx\t"<<e.loc[1]<<"\t"<<e.loc[2]<<endl;
+ 		if(BC) cout<<"BC\t"<<e.bcType<<"\t"<<e.bcInfo<<endl;
  	}
 }
 
-//Saves cell center information to a data file
-void Grid::ExportData(){
- 	ofstream fs{"CellCenters.csv"};
- 	for(auto& i: cells){
- 		for(auto& j: i){
- 			if(j.id != -1){
- 				fs<<j.x<<","<<j.y;
- 				for(int k = 0; k < edges.size(); k++){
- 					if(j.edges.find(k) != j.edges.end()) fs<<","<<1;
- 					else fs<<","<<0;
- 				}
- 				fs<<endl;
- 			}
- 		}
- 	}
- 	fs.close();
+//
+bool Grid::inDomain(int i, int j){
+	if(i < 0 || i >= hx.size() || j < 0 || j >= hy.size()) return false;
+	if(cells[i][j].id < 0) return false;
+	return true;
 }
+
+// //Saves cell center information to a data file
+// void Grid::ExportData(){
+//  	ofstream fs{"CellCenters.csv"};
+//  	for(auto& i: cells){
+//  		for(auto& j: i){
+//  			if(j.id != -1){
+//  				fs<<j.x<<","<<j.y;
+//  				for(int k = 0; k < edges.size(); k++){
+//  					if(j.edges.find(k) != j.edges.end()) fs<<","<<1;
+//  					else fs<<","<<0;
+//  				}
+//  				fs<<endl;
+//  			}
+//  		}
+//  	}
+//  	fs.close();
+// }
 
 //Reads user-provided parameters from the grid data file
 bool Grid::ParseDataFile(ifstream& fs){
