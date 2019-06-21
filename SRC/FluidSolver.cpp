@@ -27,13 +27,18 @@ void FluidSolver::SolverSetup(){
 }
 
 void FluidSolver::ConstructGhostStencils(){
+	cout<<"Displaying Edge Info\n";
 	for(auto& i: grid->edges){
 		if(i.bcType <= WALL){
+			cout<<"Dirichlet ";
+			cout<<i.nx<<" "<<i.ny<<" "<<i.bcType<<" "<<i.bcInfo<<endl;
 			i.ghost.emplace_back(Stencil{{-1},{{0,0}}});
 			i.ghost.emplace_back(Stencil{{1},{{0,0}}});
+			cout<<"weights"<<i.ghost[0].weights[0]<<endl;
 			if(i.bcType == INLET_UNI) {
 				if(i.nx == 0) i.ghost[0].constant = {0,2*i.bcInfo};
 				else i.ghost[0].constant = {2*i.bcInfo,0};
+				cout<<"inlet "<<i.ghost[0].constant[0]<<" "<<i.ghost[0].constant[1]<<endl;
 			}
 			else if(i.bcType == WALL) {
 				if(i.nx != 0) i.ghost[0].constant = {0,2*i.bcInfo};
@@ -41,9 +46,16 @@ void FluidSolver::ConstructGhostStencils(){
 			}
 		}
 		else if(i.bcType == NEUMANN){
+			cout<<"Neumann ";
+			cout<<i.nx<<" "<<i.ny<<" "<<i.bcType<<" "<<i.bcInfo<<endl;
 			i.ghost.emplace_back(Stencil{{1},{{0,0}},{0,0}});
 			i.ghost.emplace_back(Stencil{{2.5,-2.0,0.5},{{0,0},{-i.nx,-i.ny},{-2*i.nx,-2*i.ny}}});
 		}
+	}
+	cout<<"Weights\n";
+	for(auto& i: grid->edges){
+		Stencil& s = i.ghost[0];
+		for(int l = 0; l < s.weights.size(); l++) cout<<s.weights[l]<<endl;
 	}
 }
 
@@ -59,14 +71,17 @@ void FluidSolver::ConstructLHS(){
 		for(int j = 0; j < c[i].size(); j++){
 			if(c[i][j].id < 0) continue;
 			for(int k = 0; k < 4; k++){
+				cout<<i<<" "<<j<<" "<<k<<" "<<Nx[k]<<" "<<Ny[k]<<endl;
 				int nx = Nx[k], ny = Ny[k];
 				if(grid->inDomain(i+nx,j+ny)){
+					cout<<"true\n";
 					if(nx != 0) w = 2.0/(hx[i]*(hx[i]+hx[i+nx]));
 					else w = 2.0/(hy[j]*(hy[j]+hy[j+ny]));
 					MatSetValues(LHS_V,1,&(c[i][j].id),1,&(c[i+nx][j+ny].id),&w,ADD_VALUES);
 					MatSetValues(LHS_phi,1,&(c[i][j].id),1,&(c[i+nx][j+ny].id),&w,ADD_VALUES);
 				}
 				else{
+					cout<<"false\n";
 					if(nx != 0) w = 1.0/pow(hx[i],2);
 					else w = 1.0/pow(hy[j],2);
 					AddGhostStencils(i,j,c[i][j].edges[k],w);
@@ -82,29 +97,34 @@ void FluidSolver::ConstructLHS(){
 	MatAssemblyEnd(LHS_V, MAT_FINAL_ASSEMBLY);
 	MatAssemblyBegin(LHS_phi, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(LHS_phi, MAT_FINAL_ASSEMBLY);
+	cout<<"Displaying LHS_V before modification\n";
+	MatView(LHS_V,PETSC_VIEWER_STDOUT_SELF);
 	MatScale(LHS_V,-dt/(2*re));
 	MatShift(LHS_V,1.0);
-
 	MatNullSpaceCreate(PETSC_COMM_SELF, PETSC_TRUE, 0, 0, &NSP);
 	MatSetNullSpace(LHS_phi, NSP);
 	MatSetTransposeNullSpace(LHS_phi, NSP);
-	// MatView(LHS_V,PETSC_VIEWER_STDOUT_SELF);
-	// MatView(LHS_phi,PETSC_VIEWER_STDOUT_SELF);
+	cout<<"Displaying LHS\n";
+	MatView(LHS_V,PETSC_VIEWER_STDOUT_SELF);
+	MatView(LHS_phi,PETSC_VIEWER_STDOUT_SELF);
 }
 
 void FluidSolver::AddGhostStencils(int i, int j, int e, double w){
 	auto& c = grid->cells;
 	Edge& E = grid->edges[e];
-	Stencil& s = E.ghost[0];
-	for(int l = 0; l < s.weights.size(); l++) {
-		double w1 = w*s.weights[l];
-		int id = c[i+s.support[l][0]][j+s.support[l][1]].id;
+	Stencil& s0 = E.ghost[0];
+	Stencil& s1 = E.ghost[1];
+
+	for(int l = 0; l < s0.weights.size(); l++) {
+		double w1 = w*s0.weights[l];
+		int id = c[i+s0.support[l][0]][j+s0.support[l][1]].id;
+		cout<<e<<" "<<w<<" "<<s0.weights[l]<<" "<<w1<<" "<<id<<endl;
 		MatSetValues(LHS_V,1,&(c[i][j].id),1,&id,&w1,ADD_VALUES);
 	}
-	s = E.ghost[1];
-	for(int l = 0; l < s.weights.size(); l++) {
-		double w1 = w*s.weights[l];
-		int id = c[i+s.support[l][0]][j+s.support[l][1]].id;
+
+	for(int l = 0; l < s1.weights.size(); l++) {
+		double w1 = w*s1.weights[l];
+		int id = c[i+s1.support[l][0]][j+s1.support[l][1]].id;
 		MatSetValues(LHS_phi,1,&(c[i][j].id),1,&id,&w1,ADD_VALUES);
 	}
 }
@@ -139,8 +159,8 @@ void FluidSolver::DiffusiveFlux(vector<double>& D, int i, int j, int d){
 	auto& c = grid->cells;
 	auto& hx = grid->hx;
 	auto& hy = grid->hy;
-
 	double* V;
+
 	if(d == 0) VecGetArray(prevField->u,&V);
 	else VecGetArray(prevField->v,&V);
 
@@ -152,20 +172,23 @@ void FluidSolver::DiffusiveFlux(vector<double>& D, int i, int j, int d){
 	else D[2] = (0.5/re/hy[i])*(V[c[i][j].id] - EvaluateGhostStencil_V1(V,i,j,c[i][j].edges[2],d));
 	if(grid->inDomain(i,j+1)) D[3] = (1/re)*(V[c[i][j+1].id] - V[c[i][j].id])/(hy[j] + hy[j+1]);
 	else D[3] = -(0.5/re/hy[i])*(V[c[i][j].id] - EvaluateGhostStencil_V1(V,i,j,c[i][j].edges[3],d));
+
+	if(d == 0) VecRestoreArray(prevField->u, &V);
+	else VecRestoreArray(prevField->v, &V);
 }
 
 void FluidSolver::ConvectiveFlux(vector<double>& C, int i, int j){
 	auto& c = grid->cells;
 	auto& hx = grid->hx;
 	auto& hy = grid->hy;
-	double *u, *v;
+	double *u, *v, u1, u2, v1, v2;
 	VecGetArray(prevField->u, &u);
 	VecGetArray(prevField->v, &v);
-	double u1, u2, v1, v2;
 
 	vector<double> SL = SlopeLimiter(u,v,i,j,0,hx);
 	u2 = u[c[i][j].id] - hx[i]/2*SL[0];
 	v2 = v[c[i][j].id] - hx[i]/2*SL[1];
+
 	if(c[i][j].edges[0] == -1){
 		auto sl = SlopeLimiter(u,v,i-1,j,0,hx);
 		u1 = u[c[i-1][j].id] + hx[i-1]/2*sl[0];
@@ -175,11 +198,13 @@ void FluidSolver::ConvectiveFlux(vector<double>& C, int i, int j){
 		u1 = 0.5*(u[c[i][j].id] + EvaluateGhostStencil_V(u,i,j,c[i][j].edges[0],0));
 		v1 = 0.5*(v[c[i][j].id] + EvaluateGhostStencil_V(v,i,j,c[i][j].edges[0],1));
 	}
+
 	C[0] = 0.5*(pow(u1,2)+pow(u2,2) - abs(u1+u2)*(u2-u1));
 	C[1] = 0.5*(u1*v1 + u2*v2 - 0.5*abs(v1+v2)*(u2-u1) - 0.5*abs(u2+u1)*(v2-v1));
 
 	u1 = u[c[i][j].id] + hx[i]/2*SL[0];
 	v1 = v[c[i][j].id] + hx[i]/2*SL[1];
+
 	if(c[i][j].edges[1] == -1){
 		auto sl = SlopeLimiter(u,v,i+1,j,0,hx);
 		u2 = u[c[i+1][j].id] - hx[i+1]/2*sl[0];
@@ -189,14 +214,16 @@ void FluidSolver::ConvectiveFlux(vector<double>& C, int i, int j){
 		u2 = 0.5*(u[c[i][j].id] + EvaluateGhostStencil_V(u,i,j,c[i][j].edges[1],0));
 		v2 = 0.5*(v[c[i][j].id] + EvaluateGhostStencil_V(v,i,j,c[i][j].edges[1],1));
 	}
+
 	C[2] = 0.5*(pow(u1,2)+pow(u2,2) - abs(u1+u2)*(u2-u1));
 	C[3] = 0.5*(u1*v1 + u2*v2 - 0.5*abs(v1+v2)*(u2-u1) - 0.5*abs(u2+u1)*(v2-v1));
 
 	SL = SlopeLimiter(u,v,i,j,1,hy);
 	u2 = u[c[i][j].id] - hy[j]/2*SL[0];
 	v2 = v[c[i][j].id] - hy[j]/2*SL[1];
+
 	if(c[i][j].edges[2] == -1){
-		auto sl = SlopeLimiter(u,v,i,j-1,0,hy);
+		auto sl = SlopeLimiter(u,v,i,j-1,1,hy);
 		u1 = u[c[i][j-1].id] + hy[j-1]/2*sl[0];
 		v1 = v[c[i][j-1].id] + hy[j-1]/2*sl[1];
 	}
@@ -204,13 +231,15 @@ void FluidSolver::ConvectiveFlux(vector<double>& C, int i, int j){
 		u1 = 0.5*(u[c[i][j].id] + EvaluateGhostStencil_V(u,i,j,c[i][j].edges[2],0));
 		v1 = 0.5*(v[c[i][j].id] + EvaluateGhostStencil_V(v,i,j,c[i][j].edges[2],1));
 	}
+
 	C[5] = 0.5*(pow(v1,2)+pow(v2,2) - abs(v1+v2)*(v2-v1));
 	C[4] = 0.5*(u1*v1 + u2*v2 - 0.5*abs(v1+v2)*(u2-u1) - 0.5*abs(u2+u1)*(v2-v1));
 
 	u1 = u[c[i][j].id] + hy[j]/2*SL[0];
 	v1 = v[c[i][j].id] + hy[j]/2*SL[1];
+
 	if(c[i][j].edges[3] == -1){
-		auto sl = SlopeLimiter(u,v,i,j+1,0,hy);
+		auto sl = SlopeLimiter(u,v,i,j+1,1,hy);
 		u2 = u[c[i][j+1].id] - hy[j+1]/2*sl[0];
 		v2 = v[c[i][j+1].id] - hy[j+1]/2*sl[1];
 	}
@@ -218,14 +247,19 @@ void FluidSolver::ConvectiveFlux(vector<double>& C, int i, int j){
 		u2 = 0.5*(u[c[i][j].id] + EvaluateGhostStencil_V(u,i,j,c[i][j].edges[3],0));
 		v2 = 0.5*(v[c[i][j].id] + EvaluateGhostStencil_V(v,i,j,c[i][j].edges[3],1));
 	}
+
 	C[7] = 0.5*(pow(v1,2)+pow(v2,2) - abs(v1+v2)*(v2-v1));
 	C[6] = 0.5*(u1*v1 + u2*v2 - 0.5*abs(v1+v2)*(u2-u1) - 0.5*abs(u2+u1)*(v2-v1));
+
+	VecRestoreArray(prevField->u, &u);
+	VecRestoreArray(prevField->v, &v);
 }
 
 vector<double> FluidSolver::SlopeLimiter(double* u, double* v, int i, int j, int d, vector<double>& h){
-	auto& c = grid->cells;	double u1, u2, v1, v2;
-
+	auto& c = grid->cells;	
+	double u1, u2, v1, v2;
 	vector<double> a(2), b(2);
+
 	if(d == 0){
 		if(grid->inDomain(i+1,j)) {
 			a[0] = 2*(u[c[i+1][j].id] - u[c[i][j].id])/(h[i+1]+h[i]);
@@ -271,6 +305,7 @@ double FluidSolver::Div_V(Vec& Ux, Vec& Uy, int i, int j){
 	auto& hx = grid->hx;
 	auto& hy = grid->hy;
 	double *u, *v, r;
+
 	VecGetArray(Ux, &u);
 	VecGetArray(Uy, &v);
 
@@ -298,6 +333,9 @@ double FluidSolver::Div_V(Vec& Ux, Vec& Uy, int i, int j){
 	}
 	else V[3] = 0.5*(v[c[i][j].id]+EvaluateGhostStencil_V(v,i,j,c[i][j].edges[3],1));
 
+	VecRestoreArray(Ux, &u);
+	VecRestoreArray(Uy, &v);
+
 	return (V[1]-V[0])/hx[i] + (V[3]-V[2])/hy[j];
 }
 
@@ -307,6 +345,7 @@ vector<double> FluidSolver::GradP(int i, int j){
 	auto& hx = grid->hx;
 	auto& hy = grid->hy;
 	double *p, r;
+
 	VecGetArray(prevField->phi, &p);
 
 	if(c[i][j].edges[0] == -1){
@@ -332,6 +371,8 @@ vector<double> FluidSolver::GradP(int i, int j){
 		V[3] = p[c[i][j+1].id]*r + p[c[i][j].id]*(1-r);
 	}
 	else V[3] = 0.5*(p[c[i][j].id]+EvaluateGhostStencil_P(p,i,j,c[i][j].edges[3]));
+
+	VecRestoreArray(prevField->phi, &p);
 
 	return {(V[1]-V[0])/hx[i], (V[3]-V[2])/hy[j]};
 }
@@ -424,7 +465,7 @@ void FluidSolver::ConfigureKSPSolver1(KSP *solver, Mat *A){
 	PC pc;
 	KSPCreate(PETSC_COMM_SELF, solver);
 	KSPSetOperators(*solver, *A, *A);
-	KSPSetType(*solver, KSPSYMMLQ);
+	KSPSetType(*solver, KSPBCGSL);
 	KSPGetPC(*solver, &pc);
 	PCSetType(pc, PCBJACOBI);
 	KSPSetTolerances(*solver, 1.e-8, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
@@ -1038,15 +1079,16 @@ void FluidSolver::ConstructRHS_V(){
 	auto& c = grid->cells;
 	auto& hx = grid->hx;
 	auto& hy = grid->hy;
+	vector<double> D(4);
+	vector<double> C(8);
+	double v;
+
 	VecSet(RHS_u,0.0);
 	VecSet(RHS_v,0.0);
 	VecAXPY(RHS_u,1.0,prevField->u);
 	VecAXPY(RHS_v,1.0,prevField->v);
 	VecAXPY(RHS_u,0.5*dt,convectiveDer_u0);
 	VecAXPY(RHS_v,0.5*dt,convectiveDer_v0);
-	vector<double> D(4);
-	vector<double> C(8);
-	double v;
 
 	for(int i = 0; i < c.size(); i++){
 		for(int j = 0; j < c[i].size(); j++){
@@ -1072,8 +1114,10 @@ void FluidSolver::ConstructRHS_V(){
 
 void FluidSolver::ConstructRHS_phi(Vec& Ux, Vec& Uy){
 	auto& c = grid->cells;
-	VecSet(RHS_phi,0.0);
 	double v;
+
+	VecSet(RHS_phi,0.0);
+
 	for(int i = 0; i < c.size(); i++){
 		for(int j = 0; j < c[i].size(); j++){
 			if(c[i][j].id < 0) continue;
@@ -1087,8 +1131,10 @@ void FluidSolver::CorrectVelocities(Vec& Ux, Vec& Uy){
 	auto& c = grid->cells;
 	double *u, *v, r;
 	vector<double> g(2);
+
 	VecGetArray(Ux,&u);
 	VecGetArray(Uy,&v);
+
 	for(int i = 0; i < c.size(); i++){
 		for(int j = 0; j < c[i].size(); j++){
 			if(c[i][j].id < 0) continue;
@@ -1099,6 +1145,9 @@ void FluidSolver::CorrectVelocities(Vec& Ux, Vec& Uy){
 			VecSetValues(prevField->v,1,&(c[i][j].id),&r,INSERT_VALUES);
 		}
 	}
+
+	VecRestoreArray(Ux,&u);
+	VecRestoreArray(Uy,&v);
 }
 
 void FluidSolver::Solve(){
@@ -1124,11 +1173,13 @@ void FluidSolver::Solve(){
 
 void FluidSolver::ExportData(int iter){
 	double *u, *v;
+	char f1[255];
+	auto& c = grid->cells;
+
 	VecGetArray(prevField->u,&u);
 	VecGetArray(prevField->v,&v);
-	char f1[255];
+
 	sprintf(f1, "%d.csv", iter);
-	auto& c = grid->cells;
 	ofstream fs{f1};
 
 	for(int i = 0; i < c.size(); i++){
@@ -1137,8 +1188,10 @@ void FluidSolver::ExportData(int iter){
 			fs<<c[i][j].x<<","<<c[i][j].y<<","<<u[c[i][j].id]<<","<<v[c[i][j].id]<<endl;
 		}
 	}
-	fs.close();
 
+	fs.close();
+	VecRestoreArray(prevField->u,&u);
+	VecRestoreArray(prevField->v,&v);
 }
 
 // //Solves the system of equations to obtain the velocity and pressure fields after the specified number of time steps
@@ -1398,10 +1451,8 @@ void FluidSolver::ExportData(int iter){
 // }
 
 double FluidSolver::minmode(double a, double b){
-	if(a*b > 0)
-		return (a*min(1.0, abs(b/a)));
-	else
-		return 0;
+	if(a*b > 0) return (a*min(1.0, abs(b/a)));
+	else return 0;
 }
 
 void FluidSolver::CreateMatrix(Mat *A, int n1, int n2){

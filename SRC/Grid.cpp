@@ -196,6 +196,12 @@ void Grid::Show(){
  					<<*max_element(hx.begin(),hx.end())<<endl;
  	cout<<"hy:\t"<<*min_element(hy.begin(),hy.end())<<"\t"
  					<<*max_element(hy.begin(),hy.end())<<endl<<endl;
+ 	cout<<"Displaying Grid Info\n";
+ 	for(int i = 0; i < cells.size(); i++){
+ 		for(int j = 0; j < cells[i].size(); j++){
+ 			cout<<i<<" "<<j<<" "<<cells[i][j].x<<" "<<cells[i][j].y<<endl;
+ 		}
+ 	}
 }
 
 //Prints information about the boundaries
