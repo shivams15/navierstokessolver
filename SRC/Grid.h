@@ -8,6 +8,7 @@
 using namespace std; 
 
 enum bcTypes: int8_t{INLET_UNI, INLET_PARABOLIC, WALL, PRESSURE, NEUMANN};
+const double TOL = 1E-8;
 
 struct Stencil
 {
@@ -40,7 +41,6 @@ typedef vector<vector<Cell>> CellList;
 
 class Grid{
 private:
-	const double TOL = 1E-8;
 	vector<double> xrange {1E15,-1E15};	//Extent of the computational domain
 	vector<double> yrange {1E15,-1E15};
 	vector<double> AR {1E15,-1E15};	//Minimum and maximum aspect ratios
@@ -52,9 +52,8 @@ private:
 	void Cleanup();
 	bool Interior(Cell&);
 	void Show();
-	// void ExportData();
+	void ExportData();
 	bool ParseDataFile(ifstream& fs);
-	bool equals(double, double);
 public:
 	int N; //Total number of cells
 	vector<vector<double>> Nx;	//Number of cells in the x-direction
@@ -68,6 +67,8 @@ public:
 	bool inDomain(int, int);
 	Grid(char* fname);
 };
+
+bool equals(double, double);
 
 
 #endif
