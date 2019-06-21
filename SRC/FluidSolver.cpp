@@ -51,7 +51,7 @@ void FluidSolver::SolverSetup(){
 	ConstructLHS();
 	ConfigureKSPSolver(&uSolver, &LHS_V);
 	ConfigureKSPSolver1(&phiSolver, &LHS_phi);
-	// KSPSetInitialGuessNonzero(phiSolver, PETSC_TRUE);
+	KSPSetInitialGuessNonzero(phiSolver, PETSC_TRUE);
 
 	cout<<"Solver Setup Complete!\n";
 	setup =true;
@@ -137,7 +137,6 @@ void FluidSolver::ConstructLHS(){
 	MatAssemblyEnd(LHS_V, MAT_FINAL_ASSEMBLY);
 	MatAssemblyBegin(LHS_phi, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(LHS_phi, MAT_FINAL_ASSEMBLY);
-
 	MatScale(LHS_V,-dt/(2*re));
 	MatShift(LHS_V,1.0);
 	MatNullSpaceCreate(PETSC_COMM_SELF, PETSC_TRUE, 0, 0, &NSP);
@@ -195,9 +194,9 @@ void FluidSolver::DiffusiveFlux(vector<double>& D, int i, int j, int d){
 	if(grid->inDomain(i+1,j)) D[1] = (1/re)*(V[c[i+1][j].id] - V[c[i][j].id])/(hx[i] + hx[i+1]);
 	else D[1] = -(0.5/re/hx[i])*(V[c[i][j].id] - EvaluateGhostStencil_V(V,i,j,c[i][j].edges[1],d));
 	if(grid->inDomain(i,j-1)) D[2] = (1/re)*(V[c[i][j].id] - V[c[i][j-1].id])/(hy[j] + hy[j-1]);
-	else D[2] = (0.5/re/hy[i])*(V[c[i][j].id] - EvaluateGhostStencil_V(V,i,j,c[i][j].edges[2],d));
+	else D[2] = (0.5/re/hy[j])*(V[c[i][j].id] - EvaluateGhostStencil_V(V,i,j,c[i][j].edges[2],d));
 	if(grid->inDomain(i,j+1)) D[3] = (1/re)*(V[c[i][j+1].id] - V[c[i][j].id])/(hy[j] + hy[j+1]);
-	else D[3] = -(0.5/re/hy[i])*(V[c[i][j].id] - EvaluateGhostStencil_V(V,i,j,c[i][j].edges[3],d));
+	else D[3] = -(0.5/re/hy[j])*(V[c[i][j].id] - EvaluateGhostStencil_V(V,i,j,c[i][j].edges[3],d));
 
 	if(d == 0) VecRestoreArray(prevField->u, &V);
 	else VecRestoreArray(prevField->v, &V);
